@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>InstaClone — исправлено</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root{
+    --bg:#fafafa;
+    --card:#fff;
+    --muted:#8e8e8e;
+    --accent:#262626;
+    --primary:#0095f6;
+    --shadow:0 4px 12px rgba(0,0,0,0.08);
+    font-family: Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--accent);
+    display:flex;
+    min-height:100vh;
+  }
+
+  .sidebar{
+    display:none;
+  }
+  @media(min-width:900px){
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      width:240px;
+      height:100vh;
+      border-right:1px solid #e6e6e6;
+      padding:20px;
+      gap:18px;
+      position:fixed;
+      left:0;top:0;
+      background:var(--card);
+    }
+    .sidebar .logo{font-weight:700;font-size:20px}
+    .sidebar nav a{
+      display:flex;align-items:center;gap:10px;
+      text-decoration:none;color:var(--accent);
+      font-size:15px;padding:8px 0;
+    }
+    .sidebar nav a:hover{color:#e1306c}
+  }
+
+  .container{
+    flex:1;
+    max-width:1100px;
+    margin:20px auto;
+    padding:0 12px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+  @media(min-width:900px){
+    .container{margin-left:260px;grid-template-columns:minmax(0,600px) 280px;}
+  }
+
+
+  .stories{display:flex;gap:14px;overflow-x:auto;padding:10px 0;}
+  .story{flex:0 0 70px;text-align:center;font-size:12px;color:#333;background:none;border:none;cursor:pointer;}
+  .story .avatar{width:64px;height:64px;border-radius:50%;padding:3px;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;}
+  .story .avatar img{width:100%;height:100%;border-radius:50%;border:2px solid #fff;object-fit:cover;}
+  .story.viewed .avatar{background:#ccc;}
+
+
+  .post{background:var(--card);border:1px solid #ddd;border-radius:8px;box-shadow:var(--shadow);overflow:hidden;}
+  .post .meta{display:flex;align-items:center;gap:10px;padding:10px;}
+  .post .meta .avatar{width:40px;height:40px;border-radius:50%;background:#bbb;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;}
+  .post .image img{width:100%;height:auto;display:block;}
+  .post .actions{display:flex;gap:12px;padding:10px;font-size:20px;}
+  .post .actions button{background:none;border:none;cursor:pointer;transition:.2s;}
+  .post .actions button:hover{transform:scale(1.2);color:#e1306c;}
+  .post .likes,.post .caption{padding:0 10px 10px;font-size:14px;}
+  .post .caption strong{margin-right:4px;}
+
+
+  aside{display:none;}
+  @media(min-width:900px){
+    aside{display:flex;flex-direction:column;gap:20px;padding:12px;}
+    .profile-box,.suggestion{display:flex;align-items:center;justify-content:space-between;}
+    .profile-box img,.suggestion img{width:40px;height:40px;border-radius:50%;margin-right:10px;}
+    .profile-info{flex:1;}
+    .profile-name{font-weight:bold;font-size:14px;}
+    .profile-username{font-size:12px;color:var(--muted);}
+    .switch,.follow{font-size:12px;font-weight:bold;color:var(--primary);text-decoration:none;}
+    .suggestions h4{font-size:14px;color:var(--muted);margin-bottom:10px;}
+  }
+
+
+  .mobile-nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px;background:var(--card);box-shadow:0 -2px 6px rgba(0,0,0,0.1);}
+  @media(min-width:900px){.mobile-nav{display:none;}}
+
+
+  .story-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);justify-content:center;align-items:center;z-index:2000;}
+  .story-modal.active{display:flex;}
+  .story-view{position:relative;width:95%;max-width:400px;aspect-ratio:9/16;background:#000;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;animation:fadeIn .3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:scale(0.9);}to{opacity:1;transform:scale(1);}}
+  .progress-bars{display:flex;gap:4px;padding:6px;position:absolute;top:0;width:100%;z-index:5;}
+  .progress-bar{flex:1;height:3px;background:rgba(255,255,255,0.3);overflow:hidden;border-radius:2px;}
+  .progress-bar span{display:block;width:0;height:100%;background:white;animation:fill 5s linear forwards;}
+  @keyframes fill{to{width:100%;}}
+  .story-header{display:flex;justify-content:space-between;align-items:center;color:white;padding:10px 12px;z-index:10;position:relative;}
+  .story-media{flex:1;display:flex;align-items:center;justify-content:center;}
+  .story-media img,.story-media video{width:100%;height:100%;object-fit:cover;}
+  .close{font-size:28px;cursor:pointer;color:white;}
+  .tap-zone{position:absolute;top:0;width:50%;height:100%;z-index:20;}
+  .tap-zone.left{left:0;}
+  .tap-zone.right{right:0;}
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  padding: 8px 0;
+}
+
+.mobile-nav button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.2s ease;
+}
+
+.mobile-nav button:hover {
+  color: #e1306c; 
+}
+</style>
+</head>
+<body>
+
+
+<div class="sidebar">
+  <div class="logo">Instagram</div>
+  <nav>
+    <a href="#"><i class="fa-solid fa-house"></i> Главная</a>
+    <a href="#"><i class="fa-solid fa-magnifying-glass"></i> Поиск</a>
+    <a href="#"><i class="fa-regular fa-compass"></i> Интересное</a>
+    <a href="#"><i class="fa-solid fa-clapperboard"></i> Reels</a>
+    <a href="#"><i class="fa-regular fa-envelope"></i> Сообщения</a>
+    <a href="#"><i class="fa-regular fa-heart"></i> Уведомления</a>
+    <a href="#"><i class="fa-regular fa-square-plus"></i> Создать</a>
+    <a href="#"><i class="fa-regular fa-user"></i> Профиль</a>
+  </nav>
+</div>
+
+
+<div class="container">
+  <main>
+    <div class="stories">
+      <button class="story" data-user="alex" data-media="IMAGE.jpg"><div class="avatar"></div><span>alex</span></button>
+      <button class="story" data-user="maria" data-media="IMG_1717.JPG"><div class="avatar"></div><span>maria</span></button>
+      <button class="story" data-user="ivan" data-media="IMG_1818.MOV"><div class="avatar"></div><span>ivan</span></button>
+      <button class="story" data-user="olga" data-media="IMAGE2.jpg"><div class="avatar"></div><span>olga</span></button>
+    </div>
+
+    <article class="post">
+      <div class="meta"><div class="avatar">N</div><div class="name">Nushydlo</div></div>
+      <div class="image"><img src="IMAGE3.jpg" alt="post"></div>
+      <div class="actions">
+        <button><i class="fa-regular fa-heart"></i></button>
+        <button><i class="fa-regular fa-comment"></i></button>
+        <button><i class="fa-regular fa-paper-plane"></i></button>
+        <button><i class="fa-regular fa-bookmark"></i></button>
+      </div>
+      <div class="likes">128 отметок "Нравится"</div>
+      <div class="caption"><strong>ivan_team_exe</strong>Моя звездочка</div>
+    </article>
+  </main>
+
+  <aside>
+    <div class="profile-box">
+      <img src="https://i.pravatar.cc/40?u=me" alt="me">
+      <div class="profile-info"><div class="profile-name">ivan_team_exe</div><div class="profile-username">ivan</div></div>
+      <a href="#" class="switch">Переключиться</a>
+    </div>
+
+    <div class="suggestions">
+      <h4>Рекомендации для вас</h4>
+      <div class="suggestion"><img src="https://i.pravatar.cc/40?u=1"><div class="profile-info"><div class="profile-name">maqnaansho</div><div class="profile-username">Подписаны maxim_9...</div></div><a href="#" class="follow">Подписаться</a></div>
+      <div class="suggestion"><img src="https://i.pravatar.cc/40?u=2"><div class="profile-info"><div class="profile-name">valera93202</div><div class="profile-username">Рекомендации для вас</div></div><a href="#" class="follow">Подписаться</a></div>
+    </div>
+  </aside>
+</div>
+
+<nav class="mobile-nav">
+  <button><i class="fa-solid fa-house"></i></button>
+  <button><i class="fa-solid fa-magnifying-glass"></i></button>
+  <button><i class="fa-regular fa-square-plus"></i></button>
+  <button><i class="fa-regular fa-heart"></i></button>
+  <button><i class="fa-regular fa-user"></i></button>
+</nav>
+
+
+<div class="story-modal" id="storyModal">
+  <div class="story-view">
+    <div class="progress-bars"></div>
+    <div class="story-header"><span class="username"></span><span class="close">&times;</span></div>
+    <div class="story-media"></div>
+    <div class="tap-zone left"></div>
+    <div class="tap-zone right"></div>
+  </div>
+</div>
+
+<script>
+const stories = document.querySelectorAll('.story');
+const modal = document.getElementById('storyModal');
+const mediaBox = modal.querySelector('.story-media');
+const usernameEl = modal.querySelector('.username');
+const barsContainer = modal.querySelector('.progress-bars');
+const closeBtn = modal.querySelector('.close');
+const leftZone = modal.querySelector('.tap-zone.left');
+const rightZone = modal.querySelector('.tap-zone.right');
+
+let current = 0;
+let timer;
+
+function showStory(index){
+  clearTimeout(timer);
+  const story = stories[index];
+  if(!story) return closeStory();
+
+  const media = story.dataset.media;
+  const user = story.dataset.user;
+  usernameEl.textContent = user;
+  mediaBox.innerHTML = '';
+
+  let el;
+  if(media.endsWith('.MOV')){
+    el = document.createElement('video');
+    el.src = media;
+    el.autoplay = true;
+    el.muted = true;
+    el.onended = nextStory;
+  }else{
+    el = document.createElement('img');
+    el.src = media;
+    timer = setTimeout(nextStory,5000);
+  }
+  mediaBox.appendChild(el);
+  updateProgress(index);
+  modal.classList.add('active');
+}
+
+function updateProgress(activeIndex){
+  barsContainer.innerHTML = '';
+  stories.forEach((_,i)=>{
+    const bar = document.createElement('div');
+    bar.classList.add('progress-bar');
+    const fill = document.createElement('span');
+    if(i<activeIndex) fill.style.width='100%';
+    if(i===activeIndex) fill.style.animation='fill 5s linear forwards';
+    bar.appendChild(fill);
+    barsContainer.appendChild(bar);
+  });
+}
+
+function nextStory(){
+  clearTimeout(timer);
+  stories[current].classList.add('viewed');
+  current++;
+  if(current>=stories.length) return closeStory();
+  showStory(current);
+}
+function prevStory(){
+  clearTimeout(timer);
+  current--;
+  if(current<0) current=0;
+  showStory(current);
+}
+function closeStory(){
+  clearTimeout(timer);
+  modal.classList.remove('active');
+  mediaBox.innerHTML='';
+  barsContainer.innerHTML='';
+}
+
+stories.forEach((btn,i)=>btn.addEventListener('click',()=>{current=i;showStory(i);}));
+closeBtn.addEventListener('click',closeStory);
+rightZone.addEventListener('click',nextStory);
+leftZone.addEventListener('click',prevStory);
+modal.addEventListener('click',e=>{if(e.target===modal)closeStory();});
+</script>
+</body>
+</html>
